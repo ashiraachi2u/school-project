@@ -28,7 +28,7 @@ Ensure you have the following installed on your local machine:
 1. **Clone the Repository**
 
     ```bash
-    git clone https://github.com/yourusername/your-repository.git
+git clone https://github.com/ashiraachi2u/school-project.git
     cd your-repository
     ```
 
