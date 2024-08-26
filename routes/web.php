@@ -29,5 +29,5 @@ Route::get('/teachers', [TeacherController::class, 'list'])->name('teachers.list
 // Home route with authentication middleware
 Route::get('home', [HomeController::class, 'index'])->name('home')->middleware('auth');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-// Route::get('register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-// Route::post('register', [RegisterController::class, 'register']);
+Route::delete('/students/{id}', [StudentController::class, 'destroy'])->name('students.destroy');
+

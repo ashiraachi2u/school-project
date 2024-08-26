@@ -3,6 +3,8 @@
 
 <head>
     <title>Student List</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <!-- Include CSS for DataTables -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
     <!-- Include Bootstrap CSS for styling the modal -->
@@ -143,6 +145,12 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
         $(document).ready(function () {
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
             // Initialize DataTable
             var table = $('#students-table').DataTable({
                 processing: true,
@@ -160,7 +168,10 @@
                         orderable: false,
                         searchable: false,
                         render: function (data, type, row) {
-                            return '<button class="btn btn-sm btn-primary edit-btn" data-id="' + row.id + '">Edit</button>';
+                            return `
+                                <button class="btn btn-sm btn-primary edit-btn" data-id="${row.id}">Edit</button>
+                                <button class="btn btn-sm btn-danger delete-btn" data-id="${row.id}">Delete</button>
+                            `;
                         }
                     }
                 ]
@@ -218,62 +229,78 @@
                 });
             });
 
-            // Handle Form Submission for adding a student
-            $('#addForm').on('submit', function (e) {
-                e.preventDefault();
-                var data = {
-                    student_name: $('#student_name').val(),
-                    class: $('#class').val(),
-                    yearly_fees: $('#yearly_fees').val(),
-                    admission_date: $('#admission_date').val(),
-                    class_teacher_id: $('#class_teacher_id').val(),
-                    _token: '{{ csrf_token() }}'
-                };
-
-                $.ajax({
-                    url: '{{ route('students.store') }}',
-                    type: 'POST',
-                    data: data,
-                    success: function (response) {
-                        if (response.success) {
-                            $('#addModal').modal('hide');
-                            table.ajax.reload(); // Refresh the table after adding
-                        } else {
-                            alert(response.message || 'Failed to add student.');
-                        }
-                    },
-                    error: function () {
-                        alert('Failed to add student.');
-                    }
-                });
-            });
-
-            // Handle Form Submission for updating student
-            $('#editForm').on('submit', function (e) {
+            // Handle Edit Form submission
+            $('#editForm').submit(function (e) {
                 e.preventDefault();
                 var id = $('#student_id').val();
-                var data = {
+                var formData = {
                     student_name: $('#edit_student_name').val(),
                     class: $('#edit_class').val(),
                     yearly_fees: $('#edit_yearly_fees').val(),
                     class_teacher_id: $('#edit_teacher_id').val(),
-                    _token: '{{ csrf_token() }}'
                 };
 
                 $.ajax({
                     url: '/students/' + id,
                     type: 'PUT',
-                    data: data,
+                    data: formData,
                     success: function (response) {
-                        if (response.success) {
-                            $('#editModal').modal('hide');
-                            table.ajax.reload(); // Refresh the table after update
-                        } else {
-                            alert(response.message || 'Update failed.');
-                        }
+                        table.ajax.reload();
+                        $('#editModal').modal('hide');
                     },
                     error: function () {
-                        alert('Failed to update student.');
+                        alert('Failed to update student data.');
+                    }
+                });
+            });
+
+            // Handle Delete button click
+            $(document).on('click', '.delete-btn', function () {
+                var id = $(this).data('id');
+                if (confirm('Are you sure you want to delete this student?')) {
+                    $.ajax({
+                        url: '/students/' + id,
+                        type: 'DELETE',
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                table.ajax.reload();
+                            } else {
+                                alert('Failed to delete student.');
+                            }
+                        },
+                        error: function () {
+                            alert('Failed to delete student.');
+                        }
+                    });
+                }
+            });
+
+
+            // Handle Add Form submission
+            $('#addForm').submit(function (e) {
+                e.preventDefault();
+                var formData = {
+                    student_name: $('#student_name').val(),
+                    class: $('#class').val(),
+                    yearly_fees: $('#yearly_fees').val(),
+                    admission_date: $('#admission_date').val(),
+                    class_teacher_id: $('#class_teacher_id').val(),
+                };
+
+                $.ajax({
+                    url: '{{ route('students.store') }}',
+                    type: 'POST',
+                    data: formData,
+                    success: function (response) {
+                        table.ajax.reload();
+                        $('#addModal').modal('hide');
+                        $('#addForm')[0].reset(); // Clear the form
+                    },
+                    error: function () {
+                        alert('Failed to add student.');
                     }
                 });
             });
